@@ -37,7 +37,7 @@ const char INDEX_HTML[] PROGMEM = R"rawliteral(
 </head>
 <body>
 <h1>Feedlot Water Monitor</h1>
-<p style="color:#666;font-size:0.85em;">Firmware vFW_VER &nbsp;|&nbsp; Refresh page to update.</p>
+<p style="color:#666;font-size:0.85em;">Firmware v FW_VER &nbsp;|&nbsp; Refresh page to update.</p>
 
 WARNING_BOXES_PLACEHOLDER
 
@@ -185,7 +185,7 @@ function buildChart(filter) {
             tooltipFormat: 'yyyy-MM-dd HH:mm',
             displayFormats: {
             minute: 'HH:mm',
-            hour:   'HH:mm',
+            hour:   'MMM d HH:mm',
             day:    'MMM d',
             week:   'MMM d'
           }
