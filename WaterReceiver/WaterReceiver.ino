@@ -20,15 +20,15 @@
 #include "webpage.h"
 
 // ----- Firmware version — increment this each time you export a new .bin -----
-#define FW_VERSION "1.0.2"
+#define FW_VERSION "1.0.0"
 
 // ----- OTA -----
 // 1. Compile: Sketch → Export Compiled Binary → find receiver.ino.bin in sketch folder
 // 2. Upload receiver.ino.bin to your GitHub repo
 // 3. Also upload a version.txt file containing just the version string e.g. "1.0.1"
 // 4. Paste the raw GitHub URLs below
-#define OTA_VERSION_URL "https://raw.githubusercontent.com/NisargMehta7/Water-Flow-Receiver-OTA/refs/heads/main/version.txt"
-#define OTA_BIN_URL     "https://raw.githubusercontent.com/NisargMehta7/Water-Flow-Receiver-OTA/refs/heads/main/WaterReceiver/build/Heltec-esp32.esp32.heltec_wifi_lora_32_V3/WaterReceiver.ino.bin"
+#define OTA_VERSION_URL "https://raw.githubusercontent.com/NisargMehta7/Water-Flow/refs/heads/main/version.txt"
+#define OTA_BIN_URL     "https://raw.githubusercontent.com/NisargMehta7/Water-Flow/refs/heads/main/WaterReceiver/build/Heltec-esp32.esp32.heltec_wifi_lora_32_V3/WaterReceiver.ino.bin"
 
 // ----- WiFi credentials — change these -----
 const char* WIFI_SSID     = "NM Phone";
