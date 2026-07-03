@@ -20,7 +20,7 @@
 #include "webpage.h"
 
 // ----- Firmware version — increment this each time you export a new .bin -----
-#define FW_VERSION "1.0.0"
+#define FW_VERSION "1.0.1"
 
 // ----- OTA -----
 // 1. Compile: Sketch → Export Compiled Binary → find receiver.ino.bin in sketch folder
@@ -167,6 +167,16 @@ void setup() {
 // =============================================================
 void loop() {
   server.handleClient();
+
+    // Midnight reboot — checks for OTA updates once per day
+  struct tm ti;
+  if (getLocalTime(&ti)) {
+    if (ti.tm_hour == 0 && ti.tm_min == 0 && ti.tm_sec < 10) {
+      Serial.println("Midnight reboot for OTA check...");
+      delay(1000);
+      ESP.restart();
+    }
+  }
 
   if (millis() - lastWatchdogCheck >= WATCHDOG_INTERVAL_MS) {
     checkPacketWatchdog();
