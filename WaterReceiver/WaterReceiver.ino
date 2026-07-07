@@ -20,7 +20,7 @@
 #include "webpage.h"
 
 // ----- Firmware version — increment this each time you export a new .bin -----
-#define FW_VERSION "1.0.1"
+#define FW_VERSION "1.0.2"
 
 // ----- OTA -----
 // 1. Compile: Sketch → Export Compiled Binary → find receiver.ino.bin in sketch folder

@@ -88,7 +88,6 @@ TABLE_ROWS_PLACEHOLDER
 
 <div class='card'>
 <a href='/csv' class='btn btn-green'>Download CSV</a>
-<a href='/clear' class='btn btn-red' onclick="return confirm('Clear all logged data?')">Clear Log</a>
 </div>
 
 <script>
