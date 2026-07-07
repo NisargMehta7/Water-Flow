@@ -20,7 +20,7 @@
 #include "webpage.h"
 
 // ----- Firmware version — increment this each time you export a new .bin -----
-#define FW_VERSION "1.0.2"
+#define FW_VERSION "0.1.0"
 
 // ----- OTA -----
 // 1. Compile: Sketch → Export Compiled Binary → find receiver.ino.bin in sketch folder
@@ -118,7 +118,7 @@ void checkOTA(void);
 // =============================================================
 void setup() {
   Serial.begin(115200);
-  delay(500);
+  delay(1000);   // give peripherals time to stabilize after OTA reboot
 
   // --- LittleFS ---
   if (!LittleFS.begin(true)) {
@@ -168,7 +168,7 @@ void setup() {
 void loop() {
   server.handleClient();
 
-    // Midnight reboot — checks for OTA updates once per day
+  // Midnight reboot — checks for OTA updates once per day
   struct tm ti;
   if (getLocalTime(&ti)) {
     if (ti.tm_hour == 0 && ti.tm_min == 0 && ti.tm_sec < 10) {
@@ -213,9 +213,9 @@ void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr) {
   uint8_t senderID = (uint8_t)rxpacket[0];
   char *data = rxpacket + 1;
 
-  int pulses;
   float flowRate, volume;
-  int parsed = sscanf(data, "%f,%f,%d", &flowRate, &volume, &pulses);
+  uint32_t pulsesRx = 0;
+  int parsed = sscanf(data, "%f,%f,%lu", &flowRate, &volume, &pulsesRx);
 
   if (parsed < 2) {
     Serial.printf("RX: bad parse (%d/2 fields) — discarded. Raw: %s\r\n", parsed, rxpacket);
@@ -249,7 +249,9 @@ void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr) {
   Serial.printf("  Timestamp        : %s\r\n", timestamp.c_str());
   Serial.printf("  Flow Rate (L/min): %.2f\r\n", flowRate);
   Serial.printf("  Volume this hour : %.2f L\r\n", volume);
-  Serial.printf("  Pulses : %d L\r\n", pulses);
+  if (parsed >= 3) {
+    Serial.printf("  Raw Pulses       : %lu\r\n", pulsesRx);
+  }
   Serial.printf("  RSSI             : %d dBm\r\n", rssi);
   Serial.printf("  SNR              : %d\r\n", snr);
 
@@ -454,14 +456,59 @@ void handleCSV() {
 }
 
 void handleClear() {
-  clearLog();
-  for (int i = 0; i < 3; i++) {
-    noFlowCount[i]   = 0;
-    noPacketCount[i] = 0;
-    packetReceivedThisInterval[i] = false;
+  String step = server.hasArg("step") ? server.arg("step") : "";
+
+  if (step == "2") {
+    // Second confirmation passed — actually clear
+    clearLog();
+    for (int i = 0; i < 3; i++) {
+      noFlowCount[i]   = 0;
+      noPacketCount[i] = 0;
+      packetReceivedThisInterval[i] = false;
+    }
+    server.sendHeader("Location", "/");
+    server.send(303);
+    return;
   }
-  server.sendHeader("Location", "/");
-  server.send(303);
+
+  if (step == "1") {
+    // Show second, stronger warning
+    String page =
+      "<!DOCTYPE html><html><head><meta name='viewport' content='width=device-width, initial-scale=1'>"
+      "<style>body{font-family:Arial,sans-serif;background:#f4f4f4;padding:24px;}"
+      ".box{background:#fff;border-radius:8px;padding:24px;max-width:480px;margin:40px auto;"
+      "box-shadow:0 1px 4px rgba(0,0,0,0.15);}"
+      "h2{color:#922b21;}"
+      "a{display:inline-block;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:bold;margin-top:12px;}"
+      ".danger{background:#922b21;color:#fff;}"
+      ".safe{background:#888;color:#fff;margin-left:8px;}</style></head><body>"
+      "<div class='box'><h2>Final Warning</h2>"
+      "<p>This is your <strong>last chance</strong> to cancel. All logged water flow data, "
+      "warning counters, and history will be permanently erased and cannot be recovered.</p>"
+      "<a class='danger' href='/clear?step=2' onclick=\"return confirm('This is FINAL. Erase everything now?')\">Yes, erase everything</a>"
+      "<a class='safe' href='/'>Cancel</a>"
+      "</div></body></html>";
+    server.send(200, "text/html", page);
+    return;
+  }
+
+  // First warning
+  String page =
+    "<!DOCTYPE html><html><head><meta name='viewport' content='width=device-width, initial-scale=1'>"
+    "<style>body{font-family:Arial,sans-serif;background:#f4f4f4;padding:24px;}"
+    ".box{background:#fff;border-radius:8px;padding:24px;max-width:480px;margin:40px auto;"
+    "box-shadow:0 1px 4px rgba(0,0,0,0.15);}"
+    "h2{color:#c0392b;}"
+    "a{display:inline-block;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:bold;margin-top:12px;}"
+    ".danger{background:#c0392b;color:#fff;}"
+    ".safe{background:#888;color:#fff;margin-left:8px;}</style></head><body>"
+    "<div class='box'><h2>Warning</h2>"
+    "<p>You are about to permanently delete <strong>all logged data</strong> for both taps. "
+    "Consider downloading a CSV backup first.</p>"
+    "<a class='danger' href='/clear?step=1'>Continue</a>"
+    "<a class='safe' href='/'>Cancel</a>"
+    "</div></body></html>";
+  server.send(200, "text/html", page);
 }
 
 void handleSetThreshold() {
