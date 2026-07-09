@@ -53,6 +53,12 @@ int noFlowCount[3]    = {0, 0, 0};
 int noPacketCount[3]  = {0, 0, 0};
 bool packetReceivedThisInterval[3] = {false, false, false};
 
+//Server firing
+#define CENTRAL_SERVER_URL "https://api.coreneurohub.com:8005/"
+#define GATEWAY_ID   "receiver-01"     // unique per physical receiver
+#define FEEDLOT_ID   "smithfarm"       // unique per feedlot site
+
+
 // Watchdog fires once per hour to check if senders have gone silent
 #define WATCHDOG_INTERVAL_MS 3600000UL
 uint32_t lastWatchdogCheck = 0;
@@ -114,6 +120,8 @@ void handleClear(void);
 void handleSetThreshold(void);
 void checkPacketWatchdog(void);
 void checkOTA(void);
+void sendToCentralServer(const String &timestamp, uint8_t senderID, const String &senderName,
+                          float flowRate, float volume, int16_t rssi, int8_t snr);
 
 // =============================================================
 void setup() {
@@ -268,6 +276,7 @@ void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr) {
   } else {
     Serial.println("  WARNING: could not open log file for writing.");
   }
+  sendToCentralServer(timestamp, senderID, senderName, flowRate, volume, rssi, snr); //send to central server
 
   lora_idle = true;
 }
@@ -340,6 +349,39 @@ void checkOTA(void) {
       break;
   }
 }
+
+// =============================================================
+//  Push reading to central server (in addition to local logging)
+// =============================================================
+void sendToCentralServer(const String &timestamp, uint8_t senderID, const String &senderName,
+                          float flowRate, float volume, int16_t rssi, int8_t snr) {
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("Central server: WiFi not connected, skipping.");
+    return;
+  }
+
+  HTTPClient http;
+  http.begin(CENTRAL_SERVER_URL);
+  http.addHeader("Content-Type", "application/json");
+
+  String json = "{";
+  json += "\"feedlot_id\":\"" + String(FEEDLOT_ID) + "\",";
+  json += "\"gateway_id\":\"" + String(GATEWAY_ID) + "\",";
+  json += "\"sender_id\":" + String(senderID) + ",";
+  json += "\"sender_name\":\"" + senderName + "\",";
+  json += "\"timestamp\":\"" + timestamp + "\",";
+  json += "\"flow_rate\":" + String(flowRate, 2) + ",";
+  json += "\"volume\":" + String(volume, 2) + ",";
+  json += "\"rssi\":" + String(rssi) + ",";
+  json += "\"snr\":" + String(snr);
+  json += "}";
+
+  int code = http.POST(json);
+  Serial.printf("Central server: HTTP %d\r\n", code);
+  http.end();
+}
+
+
 void setupWebServer() {
   server.on("/",            handleRoot);
   server.on("/csv",          handleCSV);
