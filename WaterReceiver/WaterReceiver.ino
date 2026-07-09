@@ -56,7 +56,7 @@ bool packetReceivedThisInterval[3] = {false, false, false};
 //Server firing
 #define CENTRAL_SERVER_URL "https://api.coreneurohub.com:8005/"
 #define GATEWAY_ID   "receiver-01"     // unique per physical receiver
-#define FEEDLOT_ID   "smithfarm"       // unique per feedlot site
+#define FEEDLOT_ID   "feedlot1"       // unique per feedlot site
 
 
 // Watchdog fires once per hour to check if senders have gone silent
